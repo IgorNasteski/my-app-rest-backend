@@ -7,6 +7,7 @@ import io.javabrains.springsecurityjwt.model.UserEntity;
 import io.javabrains.springsecurityjwt.msg.*;
 import io.javabrains.springsecurityjwt.security.JwtUtil;
 import io.javabrains.springsecurityjwt.services.MyUserDetailsService;
+import io.javabrains.springsecurityjwt.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,6 +39,9 @@ public class HelloWorldController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/hello")
     public String hello(){
@@ -123,14 +127,16 @@ public class HelloWorldController {
         System.out.println("user sign up request password " + userSignUpRequest.getPassword());
         System.out.println("user sign up request email " + userSignUpRequest.getEmail());
 
-        Optional<UserEntity> isUserWithThisUsernameExistsInDb = Optional.ofNullable(userRepository.findByUsername(userSignUpRequest.getUsername()));
-
         if(userSignUpRequest.getUsername() == null || userSignUpRequest.getPassword() == null || userSignUpRequest.getEmail() == null){
             return "error-registration";
-        } else if(isUserWithThisUsernameExistsInDb.isPresent()) {
+        } else if(userService.isUserWithThisUsernameExistsInDb(userSignUpRequest.getUsername())) {    //isUserWithThisUsernameExistsInDb.isPresent()
             return "username-already-taken";
+        } else if(userService.isUserWithThisEmailExistsInDb(userSignUpRequest.getEmail())) {          //isUserWithThisEmailExistsInDb.isPresent()
+            return "email-already-taken";
         } else{
-            TokenUser tokenUser = new TokenUser();
+
+            userService.saveUserAndSetEmptyTokenAfterSignUp(userSignUpRequest.getUsername(), userSignUpRequest.getPassword(), userSignUpRequest.getEmail());
+            /*TokenUser tokenUser = new TokenUser();
             UserEntity userEntity = new UserEntity();
             userEntity.setUsername(userSignUpRequest.getUsername());
 
@@ -144,7 +150,7 @@ public class HelloWorldController {
             userEntity.setTokenUser(tokenUser);
 
             userRepository.save(userEntity);
-            tokenUserRepository.save(tokenUser);
+            tokenUserRepository.save(tokenUser);*/
 
             return "success-registration";
         }
